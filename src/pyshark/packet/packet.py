@@ -1,13 +1,7 @@
-from __future__ import print_function
-
 import datetime
 import os
 
-from pyshark.packet import consts
-from pyshark.packet.common import Pickleable
-
-
-class Packet(Pickleable):
+class Packet():
     """
     A packet object which contains layers.
     Layers can be accessed via index or name.
@@ -126,12 +120,6 @@ class Packet(Pickleable):
         Returns list of layers in packet
         """
         return self.layers
-
-    @property
-    def transport_layer(self):
-        for layer in consts.TRANSPORT_LAYERS:
-            if layer in self:
-                return layer
 
     def get_multiple_layers(self, layer_name):
         """
