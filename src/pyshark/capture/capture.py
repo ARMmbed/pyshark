@@ -34,11 +34,8 @@ class Capture(object):
     DEFAULT_BATCH_SIZE = 2 ** 16
     SUMMARIES_BATCH_SIZE = 64
     DEFAULT_LOG_LEVEL = logbook.CRITICAL
-    SUPPORTED_ENCRYPTION_STANDARDS = ['wep', 'wpa-pwk', 'wpa-pwd', 'wpa-psk']
 
-    def __init__(self, display_filter=None, only_summaries=False, eventloop=None,
-                 decryption_key=None, encryption_type='wpa-pwd', output_file=None,
-                 decode_as=None, tshark_path=None, override_prefs=None, capture_filter=None):
+    def __init__(self, display_filter=None, only_summaries=False, eventloop=None, output_file=None, decode_as=None, tshark_path=None, override_prefs=None, tshark_arguments=None, capture_filter=None):
         self._packets = []
         self.current_packet = 0
         self.display_filter = display_filter
@@ -51,16 +48,12 @@ class Capture(object):
         self.log = logbook.Logger(self.__class__.__name__, level=self.DEFAULT_LOG_LEVEL)
         self.tshark_path = tshark_path
         self.override_prefs = override_prefs
+        self.tshark_arguments = tshark_arguments
         self.debug = False
 
         self.eventloop = eventloop
         if self.eventloop is None:
             self.setup_eventloop()
-        if encryption_type and encryption_type.lower() in self.SUPPORTED_ENCRYPTION_STANDARDS:
-            self.encryption = (decryption_key, encryption_type.lower())
-        else:
-            raise UnknownEncyptionStandardException("Only the following standards are supported: %s."
-                                                    % ', '.join(self.SUPPORTED_ENCRYPTION_STANDARDS))
 
     def __getitem__(self, item):
         """
@@ -363,13 +356,8 @@ class Capture(object):
             params += [get_tshark_display_filter_flag(self.tshark_path), self.display_filter]
         if packet_count:
             params += ['-c', str(packet_count)]
-        if all(self.encryption):
-            params += ['-o', 'wlan.enable_decryption:TRUE', '-o', 'uat:80211_keys:"' + self.encryption[1] + '","' +
-                                                                  self.encryption[0] + '"']
         if self.override_prefs:
             for preference_name, preference_value in self.override_prefs.items():
-                if all(self.encryption) and preference_name in ('wlan.enable_decryption', 'uat:80211_keys'):
-                    continue  # skip if override preferences also given via --encryption options
                 params += ['-o', '{0}:{1}'.format(preference_name, preference_value)]
 
         if self.output_file:
