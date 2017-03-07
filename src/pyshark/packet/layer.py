@@ -26,6 +26,24 @@ class Field(object):
         else:
             self.hide = False
 
+    def getFieldByName(self, name):
+        if self.name == name:
+            return self
+        ret = None
+        for subfield in (self.field, self.proto):
+            if not subfield:
+                continue
+            if isinstance(subfield, list):
+                for field in subfield:
+                    ret = field.getFieldByName(name)
+                    if ret:
+                        return ret
+            else:
+                ret = self.field.getFieldByName(name)
+                if ret:
+                    break
+        return ret
+
 class Layer():
     """
     An object representing a Packet layer.
@@ -61,3 +79,9 @@ class Layer():
         tw = py.io.TerminalWriter()
         tw.write("rutabaga" + os.linesep, yellow=True, bold=True)
         tw.write(field_name + ':', green=True, bold=True)
+
+    def findField(self, name):
+        for field in self.fields:
+            ret = field.getFieldByName(name):
+            if ret:
+                return ret
