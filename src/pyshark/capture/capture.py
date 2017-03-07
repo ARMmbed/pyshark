@@ -172,7 +172,7 @@ class Capture(object):
             while True:
                 try:
                     packet, data = self.eventloop.run_until_complete(
-                        self._get_packet_from_stream(tshark_process.stdout, data, psml_structure=psml_structure))
+                        self._get_packet_from_stream(tshark_process.stdout, data))
                 except EOFError:
                     self.log.debug('EOF reached (sync)')
                     break
@@ -233,7 +233,7 @@ class Capture(object):
 
         while True:
             try:
-                packet, data = yield From(self._get_packet_from_stream(fd, data, psml_structure=psml_struct))
+                packet, data = yield From(self._get_packet_from_stream(fd, data))
             except EOFError:
                 self.log.debug('EOF reached')
                 break
@@ -275,7 +275,7 @@ class Capture(object):
             raise Return(None, data)
 
     @asyncio.coroutine
-    def _get_packet_from_stream(self, stream, existing_data, psml_structure=None):
+    def _get_packet_from_stream(self, stream, existing_data):
         """
         A coroutine which returns a single packet if it can be read from the given StreamReader.
         :return a tuple of (packet, remaining_data). The packet will be None if there was not enough XML data to create
@@ -287,7 +287,7 @@ class Capture(object):
         packet, existing_data = self._extract_tag_from_data(existing_data)
 
         if packet:
-            packet = packet_from_xml_packet(packet, psml_structure=psml_structure)
+            packet = packet_from_xml_packet(packet)
             raise Return(packet, existing_data)
 
         new_data = yield From(stream.read(self.DEFAULT_BATCH_SIZE))
