@@ -36,12 +36,17 @@ class Packet():
             #self.sniff_timestamp = sniff_time
         else:
             self.layers = []
+            
+            #geninfo = self.findLayer("geninfo")
+            frame = self.findLayer("frame")
+
             self.frame_info = ''
-            self.number = -1
+            self.number = frame.findField("frame.number")
             self.interface_captured = ''
-            self.captured_length = -1
-            self.length = -1
-            self.sniff_timestamp = -1
+            self.captured_length = frame.findField("frame.cap_len")
+            self.length = length = frame.findField("frame.len")
+            self.sniff_timestamp = frame.findField("frame.time_relative")
+            self.epoch_time = frame.findField("frame.time_epoch")
 
     def __getitem__(self, item):
         """
@@ -84,3 +89,12 @@ class Packet():
         Returns all layer names
         """
         return [layer.layer_name for layer in self.layers]
+
+    def findLayer(self, name):
+        """
+        Returns layer in packet if exists, None otherwise
+        """
+        for layer in self.layers:
+            if layer.layer_name == name:
+                return layer
+        return None
