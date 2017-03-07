@@ -2,7 +2,6 @@
 This module contains functions to turn TShark XML parts into Packet objects.
 """
 import lxml.objectify
-from pyshark.packet.layer import Layer
 from pyshark.packet.packet import Packet
 
 def psml_structure_from_xml(psml_structure):
@@ -23,12 +22,13 @@ def packet_from_xml_packet(xml_pkt):
     return _packet_from_pdml_packet(xml_pkt)
 
 def _packet_from_pdml_packet(pdml_packet):
-    layers = [Layer(proto) for proto in pdml_packet.proto]
-    geninfo, frame, layers = layers[0], layers[1], layers[2:]
-    return Packet(layers=layers, frame_info=frame, number=geninfo.get_field_value('num'),
-                  length=geninfo.get_field_value('len'), sniff_time=geninfo.get_field_value('timestamp', raw=True),
-                  captured_length=geninfo.get_field_value('caplen'),
-                  interface_captured=frame.get_field_value('interface_id', raw=True))
+    """
+    Transforms XML object to Packet instance
+
+    :param pdml_packet: lxml.objectify.ObjectifiedElement
+    :return: Packet instance
+    """
+    return Packet(pdml_packet = pdml_packet)
 
 def packets_from_xml(xml_data):
     """
