@@ -1,5 +1,6 @@
 import datetime
 import os
+from pyshark.packet.layer import Layer
 
 class Packet():
     """
@@ -7,8 +8,7 @@ class Packet():
     Layers can be accessed via index or name.
     """
 
-    def __init__(self, layers=None, frame_info=None, number=None,
-                 length=None, captured_length=None, sniff_time=None, interface_captured=None):
+    def __init__(self, pdml_packet=None):
         """
         Creates a Packet object with the given layers and info.
 
@@ -19,16 +19,29 @@ class Packet():
         :param sniff_time: The time the packet was captured (timestamp)
         :param interface_captured: The interface the packet was captured in.
         """
-        if layers is None:
-            self.layers = []
+
+        # TODO: retrieve metadata
+
+        # frame_info=None, number=None, length=None, captured_length=None, sniff_time=None, interface_captured=None
+        
+        # TODO: simple search function for layer, then metadata retrieval
+        
+        if pdml_packet is not None:
+            self.layers = [Layer(proto) for proto in pdml_packet.proto]
+            #self.frame_info = frame_info
+            #self.number = number
+            #self.interface_captured = interface_captured
+            #self.captured_length = captured_length
+            #self.length = length
+            #self.sniff_timestamp = sniff_time
         else:
-            self.layers = layers
-        self.frame_info = frame_info
-        self.number = number
-        self.interface_captured = interface_captured
-        self.captured_length = captured_length
-        self.length = length
-        self.sniff_timestamp = sniff_time
+            self.layers = []
+            self.frame_info = ''
+            self.number = -1
+            self.interface_captured = ''
+            self.captured_length = -1
+            self.length = -1
+            self.sniff_timestamp = -1
 
     def __getitem__(self, item):
         """
@@ -39,60 +52,14 @@ class Packet():
         """
         if isinstance(item, int):
             return self.layers[item]
-        for layer in self.layers:
-            if layer.layer_name == item.lower():
-                return layer
+        if item == 'packet':
+            return self
+        else:
+            for layer in self.layers:
+                if layer.layer_name == item.lower():
+                    return layer
+
         raise KeyError('Layer does not exist in packet')
-
-    def __contains__(self, item):
-        """
-        Checks if the layer is inside the packet.
-
-        :param item: name of the layer
-        """
-        try:
-            self[item]
-            return True
-        except KeyError:
-            return False
-
-    def __dir__(self):
-        return dir(type(self)) + list(self.__dict__.keys()) + [l.layer_name for l in self.layers]
-
-    @property
-    def sniff_time(self):
-        try:
-            timestamp = float(self.sniff_timestamp)
-        except ValueError:
-            # If the value after the decimal point is negative, discard it
-            # Google: wireshark fractional second
-            timestamp = float(self.sniff_timestamp.split(".")[0])
-        return datetime.datetime.fromtimestamp(timestamp)
-
-    def __repr__(self):
-        transport_protocol = ''
-        if self.transport_layer != self.highest_layer and self.transport_layer is not None:
-            transport_protocol = self.transport_layer + '/'
-
-        return '<%s%s Packet>' % (transport_protocol, self.highest_layer)
-
-    def __str__(self):
-        s = self._packet_string
-        for layer in self.layers:
-            s += str(layer)
-        return s
-
-    @property
-    def _packet_string(self):
-        """
-        A simple pretty string that represents the packet.
-        """
-        return 'Packet (Length: %s)%s' %(self.length, os.linesep)
-
-    def pretty_print(self):
-        print('self._packet_string')
-        for layer in self.layers:
-            layer.pretty_print()
 
     def __getattr__(self, item):
         """
@@ -103,9 +70,13 @@ class Packet():
                 return layer
         raise AttributeError()
 
+    def pretty_print(self):
+        for layer in self.layers:
+            layer.pretty_print()
+
     @property
     def highest_layer(self):
-        return self.layers[-1].layer_name.upper()
+        return self.layers[-1].layer_name
 
     @property
     def layer_names(self):
@@ -113,18 +84,3 @@ class Packet():
         Returns all layer names
         """
         return [layer.layer_name for layer in self.layers]
-
-    @property
-    def all_layers(self):
-        """
-        Returns list of layers in packet
-        """
-        return self.layers
-
-    def get_multiple_layers(self, layer_name):
-        """
-        Returns a list of all the layers in the packet that are of the layer type (an incase-sensitive string).
-        This is in order to retrieve layers which appear multiple times in the same packet (i.e. double VLAN) which cannot be
-        retrieved by easier means.
-        """
-        return [layer for layer in self.layers if layer.layer_name.lower() == layer_name.lower()]
